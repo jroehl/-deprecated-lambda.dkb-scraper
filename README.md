@@ -1,4 +1,6 @@
-# lambda dkb-scraper <PoC>
+# lambda dkb-scraper
+
+> PoC
 
 Scrape dkb banking website and store transactions in google sheet.
 
