@@ -1,0 +1,76 @@
+# Happy Coding!
+
+service: dkb-scraper # NOTE: update this with your service name
+
+plugins:
+  - serverless-python-requirements
+  - serverless-plugin-aws-alerts
+  - serverless-domain-manager
+  - serverless-offline-python
+
+provider:
+  name: aws
+  runtime: python3.6
+  timeout: 60
+  stage: dev # you can override this via the CLI argument
+  apiKeys:
+    - ${self:service}-key-${self:custom.stage}
+  usagePlan:
+    quota:
+      limit: 2000
+      period: MONTH
+    throttle:
+      burstLimit: 10
+      rateLimit: 5
+  environment: # Service wide environment variables
+    STAGE: ${self:custom.stage}
+
+custom:
+  pythonRequirements:
+    dockerizePip: non-linux
+  stage: ${opt:stage, self:provider.stage}
+  crons:
+    production:
+      rate: cron(0 0 * * ? *)
+      description: Trigger every day at 00:00.
+      enabled: true
+    dev:
+      rate: cron(0 0 * * ? *)
+      description: Trigger every day at 00:00.
+      enabled: false
+  domains:
+    production: lapi.johannroehl.de
+    dev: dev-lapi.johannroehl.de
+  customDomain:
+    basePath: ${self:service}
+    domainName: ${self:custom.domains.${self:custom.stage}}
+    stage: ${self:custom.stage}
+    createRoute53Record: false
+
+functions:
+  scrape:
+    handler: handler.scrape
+    events:
+      - http:
+          private: true
+          path: /scrape/{time_span}
+          method: get
+          request:
+          parameters:
+            paths:
+              time_span: true
+      - http:
+          private: true
+          path: /scrape/{time_span}/{end_date}
+          method: get
+          request:
+          parameters:
+            paths:
+              time_span: true
+              end_date: true
+      - schedule:
+          enabled: ${self:custom.crons.${self:custom.stage}.enabled}
+          rate: ${self:custom.crons.${self:custom.stage}.rate}
+          description: ${self:custom.crons.${self:custom.stage}.description}
+          input:
+            time_span: 2

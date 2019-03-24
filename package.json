@@ -1,0 +1,23 @@
+{
+  "name": "dkb-scraper",
+  "version": "1.0.0",
+  "description": "Scrape dkb banking website and store transactions in google sheet",
+  "main": "handler.py",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "active_venv": "source venv/bin/activate",
+    "store_requirements": "pip freeze > requirements.txt",
+    "start": "python3 ./handler.py",
+    "start_offline": "serverless offline start --port 6060 --noTimeout",
+    "create_domain": "serverless create_domain"
+  },
+  "author": "jroehl <mail@johannroehl.de>",
+  "license": "ISC",
+  "dependencies": {
+    "serverless": "^1.39.0",
+    "serverless-domain-manager": "^3.1.0",
+    "serverless-offline-python": "^3.22.0",
+    "serverless-plugin-aws-alerts": "^1.2.4",
+    "serverless-python-requirements": "^4.3.0"
+  }
+}
