@@ -3,7 +3,7 @@
 
 import csv
 import re
-from datetime import date
+from datetime import date, datetime
 import requests
 from lxml.html import fromstring
 from fints.client import FinTS3PinTanClient
@@ -88,8 +88,10 @@ class DKBSession(object):
         return ret
 
     def query(self, start_date, end_date=date.today()):
+        formatted_from = start_date.strftime('%x')
+        formatted_to = end_date.strftime('%x')
         print('Querying transactions and balances between "{}" and "{}"'.format(
-            start_date.date(), end_date.date()
+            start_date.strftime('%x'), end_date.strftime('%x')
         ))
 
         client = FinTS3PinTanClient(
@@ -210,16 +212,21 @@ class DKBSession(object):
 
         return {
             'info': {
-                'start_date': from_date, 'end_date': to_date,
-                'request_date': date.today().strftime(date_format)
+                'start_date': formatted_from, 'end_date': formatted_to,
+                'request_date': date.today().strftime('%x')
             },
             'accounts': accounts
         }
 
-    def __sanitize_transactions(self, currency_indices, transactions):
+    def __sanitize_transactions(self, indices, transactions):
         for transaction in transactions:
-            for i in currency_indices:
+            for i in indices['currency']:
                 transaction[i] = normalize_currency(transaction[i])
+            if 'date' in indices:
+                for i in indices['date']:
+                    date_format = get_config('formats.date', self.__dkb_cfg)
+                    date = datetime.strptime(transaction[i], date_format)
+                    transaction[i] = date.strftime('%x')
 
         return transactions
 
@@ -271,7 +278,7 @@ class DKBSession(object):
                         i] if key not in indices else indices[key] + [i]
 
         transactions = self.__sanitize_transactions(
-            indices['currency'],
+            indices,
             csv_rows[transaction_begin:]
         )
         return {

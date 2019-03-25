@@ -34,7 +34,7 @@ def scrape(event, context):
             verbose=True
         )
 
-        date_format = dkb_cfg['formats']['date']
+        date_format = get_config('formats.date', dkb_cfg)
         end_date = datetime.now()
         if end_date_string:
             end_date = datetime.strptime(end_date_string, date_format)

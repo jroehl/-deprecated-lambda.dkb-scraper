@@ -145,9 +145,7 @@ class GSheet(object):
             list(accounts[list(accounts.keys())[0]].keys())
         ))
 
-        now = datetime.now().strftime(
-            get_config('formats.datetime', self.__dkb_cfg)
-        )
+        now = datetime.now().strftime('%x %X')
         sheet_header = [
             title,
             '(changes will be overwritten)'
@@ -361,7 +359,6 @@ class GSheet(object):
 
         indices = data['indices']
         if account_cfg['merge_values']:
-            datetime_format = get_config('formats.date', self.__dkb_cfg)
             existing_rows = list(
                 map(
                     lambda x: ';'.join(
@@ -378,7 +375,7 @@ class GSheet(object):
             unique_rows = sorted(
                 unique_rows,
                 key=lambda x: datetime.strptime(
-                    x.split(';')[indices['date'][0]], datetime_format
+                    x.split(';')[indices['date'][0]], '%x'
                 ),
                 reverse=True
             )
@@ -403,13 +400,12 @@ class GSheet(object):
             except:
                 cell.value = ''
 
-            if y in indices['currency']:
+            if y in indices['currency'] or ('date' in indices and y in indices['date']):
                 user_entered.append(cell)
             else:
                 raw.append(cell)
 
         ws.clear()
-
         ws.update_cells(
             user_entered,
             value_input_option='USER_ENTERED'
@@ -438,6 +434,23 @@ class GSheet(object):
                 }
             }
         ]
+
+        if 'date' in indices:
+            for i in indices['date']:
+                repeat_cells.append({
+                    'start_row': 1,
+                    'end_row': max_row,
+                    'start_col': i,
+                    'end_col': i + 1,
+                    'fields': 'userEnteredFormat.numberFormat',
+                    'formats': {
+                        'userEnteredFormat': {
+                            'numberFormat': {
+                                    'type': 'DATE',
+                                    }
+                        }
+                    }
+                })
 
         for i in indices['currency']:
             repeat_cells.append({

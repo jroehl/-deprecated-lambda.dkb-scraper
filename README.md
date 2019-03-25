@@ -10,6 +10,7 @@ Create `.env` file in project root or set environment variables manually
 
 ```bash
 export GOOGLE_SHEET_NAME="dkb-finances"
+export GOOGLE_SHEET_LOCALE="de_DE"
 export GOOGLE_SHEET_WRITER="mail@johannroehl.de"
 
 # use bank account login credentials

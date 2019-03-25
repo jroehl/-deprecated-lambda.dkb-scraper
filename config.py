@@ -52,7 +52,6 @@ config = {
             },
             'formats': {
                 'date': '%d.%m.%Y',
-                'datetime': '%d.%m.%Y %H:%M:%S',
             },
             'blz': '12030000',
             'fints_url': 'https://banking-dkb.s-fints-pt-dkb.de/fints30',
@@ -61,8 +60,11 @@ config = {
                 'merge_values': True,
                 'keys': {
                     'total': 'Saldo:',
-                    'date': 'Wertstellung',
-                    'currency': 'Betrag (EUR)'
+                    'currency': 'Betrag (EUR)',
+                    'date': [
+                        'Wertstellung',
+                        'Belegdatum',
+                    ]
                 },
                 'url': '{}/finanzstatus/kreditkartenumsaetze'.format(__base_url),
                 'fieldnames': [
@@ -79,8 +81,11 @@ config = {
                 'merge_values': True,
                 'keys': {
                     'total': 'Kontostand',
-                    'date': 'Buchungstag',
-                    'currency': 'Betrag (EUR)'
+                    'currency': 'Betrag (EUR)',
+                    'date': [
+                        'Buchungstag',
+                        'Wertstellung',
+                    ]
                 },
                 'url': '{}/finanzstatus/kontoumsaetze'.format(__base_url),
                 'fieldnames': [
@@ -108,7 +113,7 @@ config = {
                         'Einstandswert',
                         'Dev. Kurs',
                         'Kurswert in Euro'
-                    ]
+                    ],
                 },
                 'url': '{}/depotstatus'.format(__base_url),
                 'fieldnames': [
@@ -136,7 +141,7 @@ config = {
                 'private_key_id': environ.get('CREDS_PRIVATE_KEY_ID', None),
                 'token_uri': environ.get('CREDS_TOKEN_URI', None),
             },
-            'locale':  locale.setlocale(locale.LC_ALL, ''),
+            'locale':  locale.setlocale(locale.LC_ALL, environ.get('GOOGLE_SHEET_LOCALE', '')),
             'sheet_name': environ.get('GOOGLE_SHEET_NAME', 'dkb-finance-dashboard'),
             'generated_values_ws_name': environ.get('GOOGLE_SHEET_GENVALUES_WS', 'GENERATED VALUES'),
             'sheet_writer': environ.get('GOOGLE_SHEET_WRITER', None),
