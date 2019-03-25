@@ -281,9 +281,13 @@ class DKBSession(object):
             indices,
             csv_rows[transaction_begin:]
         )
+
+        total = normalize_currency(total)
         return {
             **data,
-            'total': normalize_currency(total),
+            'title': '{} / {}'.format(data['product_name'], data['account_number']),
+            'total': total,
+            'has_decimal_comma': total[len(total) - 3] == ',',
             'url_string': url_string,
             'indices': indices,
             'total_key': total_key,

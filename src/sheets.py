@@ -9,6 +9,7 @@ from config import get_config
 from src.utils import format_pattern, get_format_request
 
 DRIVE_V3_URL = 'https://www.googleapis.com/drive/v3/files'
+ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
 
 class GSheet(object):
@@ -155,38 +156,56 @@ class GSheet(object):
         sheet_header[len(sheet_header) - 1] = now
         sheet_header[len(sheet_header) - 2] = 'updated_at'
 
-        max_len = len(header) if len(
-            header) > len(sheet_header) else len(sheet_header)
-
         rows = [
             sheet_header,
-            [''] * max_len,
+            [],
             header,
         ]
 
         start_row_format = None
-        end_row_format = None
+        max_row = None
         start_col_format = None
         end_col_format = None
 
         start_idx = len(rows)
+        query_row = []
+        query_header = []
         for i, account in enumerate(accounts):
             row = i + (start_idx)
             rows.append([])
             col = 0
             account_values = accounts[account]
+            account_cfg = self.__dkb_cfg[account_values['account_type']]
+            if account_cfg['display_sums']:
+                indices = account_values['indices']
+                query = '''=QUERY(
+                        {{ARRAYFORMULA(IF(LEN('{sheet}'!{date_col}2:{date_col}){arg_separator} EOMONTH('{sheet}'!{date_col}2:{date_col};0){arg_separator} "")){array_separator}'{sheet}'!{amount_col}2:{amount_col}}}{arg_separator}
+                        "{formula}"
+                    )'''.format(**{
+                    'sheet': account_values['title'],
+                    'date_col': ALPHABET[indices['date'][0]],
+                    'amount_col': ALPHABET[indices['currency'][0]],
+                    'formula': 'select Col1, sum(Col2) group by Col1 order by Col1 desc label Col1\'MONTHS\', sum(Col2)\'SUM\' format Col1\'MMMM YYYY\'',
+                    'array_separator': ' \\ ' if account_values['has_decimal_comma'] else ', ',
+                    'arg_separator': ';' if account_values['has_decimal_comma'] else ','
+                })
+                query_header = query_header + [account, '', '']
+                query_row = query_row + [query, '', '']
+
             for key in header:
                 if key in account_values:
                     rows[row].append(str(account_values[key]))
                 if key == 'total':
                     if not start_row_format:
                         start_row_format = row
-                    end_row_format = row
+                    max_row = row
                     start_col_format = col
                     end_col_format = col + 1
                 col += 1
 
-        footer = [''] * max_len
+        max_col = max(len(header), len(sheet_header))
+
+        footer = [''] * max_col
         sum_formula = '=SUM({}:{})'.format(
             rowcol_to_a1(start_row_format + 1, end_col_format),
             rowcol_to_a1(len(rows), end_col_format)
@@ -195,9 +214,13 @@ class GSheet(object):
         footer[len(footer) - 2] = 'SUM'
         rows.append(footer)
 
-        end_row_format = len(rows)
+        rows.append([])
+        rows.append(query_header)
+        rows.append(query_row)
+
+        max_row = len(rows)
         block_range = 'A1:{}'.format(
-            rowcol_to_a1(end_row_format, max_len)
+            rowcol_to_a1(max_row, max(max_col, len(query_header)))
         )
 
         cells = ws.range(block_range)
@@ -209,7 +232,7 @@ class GSheet(object):
                 value = rows[x][y]
                 cell.value = value
             except:
-                cell.value = 'row {} col {}'.format(cell.row, cell.col)
+                pass
 
         ws.clear()
 
@@ -218,81 +241,138 @@ class GSheet(object):
             value_input_option='USER_ENTERED'
         )
 
-        req = get_format_request(
-            ws.id,
-            max_row=end_row_format,
-            max_col=max_len,
-            repeat_cells=[
-                {
-                    'start_row': start_row_format,
-                    'end_row': end_row_format,
-                    'start_col': start_col_format,
-                    'end_col': max_len,
-                    'fields': 'userEnteredFormat.numberFormat',
-                    'formats': {
-                        'userEnteredFormat': {
-                            'numberFormat': {
-                                'type': 'CURRENCY',
-                                'pattern': self.currency_pattern,
-                            }
-                        }
-                    }
-                },
-                {
-                    'start_row': 0,
-                    'end_row': 1,
-                    'start_col': 0,
-                    'end_col': max_len,
-                    'fields': 'userEnteredFormat.backgroundColor',
-                    'formats': {
-                        'userEnteredFormat': {
-                            'backgroundColor': {
-                                'red': 0.8,
-                                'green': 0.8,
-                                'blue': 0.8,
-                            }
-                        }
-                    }
-                },
-                {
-                    'start_row': 2,
-                    'end_row': 3,
-                    'start_col': 0,
-                    'end_col': max_len,
-                    'fields': 'userEnteredFormat.backgroundColor',
-                    'formats': {
-                        'userEnteredFormat': {
-                            'backgroundColor': {
-                                'red': 0.9,
-                                'green': 0.9,
-                                'blue': 0.9,
-                            }
-                        }
-                    }
-                },
-                {
-                    'start_row': end_row_format - 1,
-                    'end_row': end_row_format,
-                    'start_col': end_col_format - 2,
-                    'end_col': max_len,
-                    'fields': 'userEnteredFormat.backgroundColor',
-                    'formats': {
-                        'userEnteredFormat': {
-                            'backgroundColor': {
-                                'red': 0.95,
-                                'green': 0.95,
-                                'blue': 0.95,
-                            }
+        query_end_col = len(query_header)
+
+        repeat_cells = [
+            {
+                'start_row': start_row_format,
+                'end_row': max_row - 2,
+                'start_col': start_col_format,
+                'end_col': max_col,
+                'fields': 'userEnteredFormat.numberFormat',
+                'formats': {
+                    'userEnteredFormat': {
+                        'numberFormat': {
+                            'type': 'CURRENCY',
+                            'pattern': self.currency_pattern,
                         }
                     }
                 }
-            ],
+            },
+            {
+                'start_row': 0,
+                'end_row': 1,
+                'start_col': 0,
+                'end_col': max_col,
+                'fields': 'userEnteredFormat.backgroundColor',
+                'formats': {
+                    'userEnteredFormat': {
+                        'backgroundColor': {
+                            'red': 0.8,
+                            'green': 0.8,
+                            'blue': 0.8,
+                        }
+                    }
+                }
+            },
+            {
+                'start_row': 2,
+                'end_row': 3,
+                'start_col': 0,
+                'end_col': max_col,
+                'fields': 'userEnteredFormat.backgroundColor',
+                'formats': {
+                    'userEnteredFormat': {
+                        'backgroundColor': {
+                            'red': 0.8,
+                            'green': 0.8,
+                            'blue': 0.8,
+                        }
+                    }
+                }
+            },
+            {
+                'start_row': max_row - 2,
+                'end_row': max_row - 1,
+                'start_col': 0,
+                'end_col': query_end_col,
+                'fields': 'userEnteredFormat.backgroundColor',
+                'formats': {
+                    'userEnteredFormat': {
+                        'backgroundColor': {
+                            'red': 0.9,
+                            'green': 0.9,
+                            'blue': 0.9,
+                        }
+                    }
+                }
+            },
+            {
+                'start_row': max_row - 1,
+                'end_row': max_row,
+                'start_col': 0,
+                'end_col': query_end_col,
+                'fields': 'userEnteredFormat.backgroundColor',
+                'formats': {
+                    'userEnteredFormat': {
+                        'backgroundColor': {
+                            'red': 0.9,
+                            'green': 0.9,
+                            'blue': 0.9,
+                        }
+                    }
+                }
+            },
+            # SUM ROW
+            {
+                'start_row': max_row - 4,
+                'end_row': max_row - 3,
+                'start_col': end_col_format - 2,
+                'end_col': max_col,
+                'fields': 'userEnteredFormat.backgroundColor',
+                'formats': {
+                    'userEnteredFormat': {
+                        'backgroundColor': {
+                            'red': 0.95,
+                            'green': 0.95,
+                            'blue': 0.95,
+                        }
+                    }
+                }
+            }
+        ]
+
+        for i, row in enumerate(query_row):
+            if i % 3 == 1:
+                repeat_cells.append(
+                    {
+                        'start_row': max_row,
+                        'end_row': 999999,
+                        'start_col': i,
+                        'end_col': i + 1,
+                        'fields': 'userEnteredFormat.numberFormat',
+                        'formats': {
+                            'userEnteredFormat': {
+                                'numberFormat': {
+                                    'type': 'CURRENCY',
+                                    'pattern': self.currency_pattern,
+                                }
+                            }
+                        }
+                    }
+                )
+
+        req = get_format_request(
+            ws.id,
+            max_row=max_row,
+            max_col=max_col,
+            repeat_cells=repeat_cells,
             borders=[
                 {
                     'start_row': 2,
                     'end_row': 3,
                     'start_col': 0,
-                    'end_col': max_len,
+                    'end_col': max_col,
                     'borders': {
                         'bottom': {
                             'style': 'DOUBLE',
@@ -306,10 +386,10 @@ class GSheet(object):
                     }
                 },
                 {
-                    'start_row': end_row_format - 1,
-                    'end_row': end_row_format,
-                    'start_col': max_len - 2,
-                    'end_col': max_len,
+                    'start_row': max_row - 4,
+                    'end_row': max_row - 3,
+                    'start_col': max_col - 2,
+                    'end_col': max_col,
                     'borders': {
                         'top': {
                             'style': 'SOLID',
@@ -321,7 +401,24 @@ class GSheet(object):
                             }
                         }
                     }
-                }
+                },
+                {
+                    'start_row': max_row - 1,
+                    'end_row': max_row,
+                    'start_col': 0,
+                    'end_col': query_end_col,
+                    'borders': {
+                        'bottom': {
+                            'style': 'SOLID',
+                            'width': 1,
+                            'color': {
+                                'red': 0,
+                                'green': 0,
+                                'blue': 0,
+                            }
+                        }
+                    }
+                },
             ]
         )
 
@@ -338,7 +435,7 @@ class GSheet(object):
 
     def __add(self, data):
         ws = None
-        title = '{} / {}'.format(data['product_name'], data['account_number'])
+        title = data['title']
         if self.verbose:
             print('Adding data to {}'.format(title))
 

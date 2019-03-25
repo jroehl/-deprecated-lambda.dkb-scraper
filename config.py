@@ -57,6 +57,7 @@ config = {
             'fints_url': 'https://banking-dkb.s-fints-pt-dkb.de/fints30',
             'base_url': __base_url,
             'CREDIT': {
+                'display_sums': True,
                 'merge_values': True,
                 'keys': {
                     'total': 'Saldo:',
@@ -78,6 +79,7 @@ config = {
                 ]
             },
             'SEPA': {
+                'display_sums': True,
                 'merge_values': True,
                 'keys': {
                     'total': 'Kontostand',
@@ -104,6 +106,7 @@ config = {
                 ]
             },
             'DEPOT': {
+                'display_sums': False,
                 'merge_values': False,
                 'keys': {
                     'total': 'Depotgesamtwert',
