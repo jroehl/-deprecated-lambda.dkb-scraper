@@ -9,8 +9,20 @@
     "store_requirements": "pip freeze > requirements.txt",
     "start": "python3 ./handler.py",
     "start_offline": "serverless offline start --port 6060 --noTimeout",
-    "create_domain": "serverless create_domain"
+    "create_domain": "serverless create_domain",
+    "deploy": "serverless deploy -s dev --aws-profile $AWS_PROFILE --region $AWS_REGION",
+    "deploy_prod": "serverless deploy -s production --aws-profile $AWS_PROFILE --region $AWS_REGION",
+    "logs": "serverless logs -s dev -f scrape",
+    "logs_prod": "serverless logs -s production -f scrape"
   },
+  "keywords": [
+    "dkb",
+    "scrape",
+    "banking",
+    "budgeting",
+    "finance",
+    "fints"
+  ],
   "author": "jroehl <mail@johannroehl.de>",
   "license": "ISC",
   "dependencies": {
