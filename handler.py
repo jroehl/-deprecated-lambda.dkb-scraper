@@ -25,7 +25,7 @@ def scrape(event, context):
             if 'end_date' in event:
                 end_date_string = event['end_date']
         else:
-            raise Exception("start_date has to be specified")
+            raise Exception('start_date has to be specified')
 
         dkb_cfg = get_config('dkb')
         session = DKBSession(
@@ -60,20 +60,26 @@ def scrape(event, context):
                 del account_values['transactions']
 
         response = {
-            "statusCode": 200,
-            "message": "query successful",
-            "body": json.dumps(res)
+            'statusCode': 200,
+            'body': json.dumps({
+                'message': 'query successful',
+                'res': res
+            })
         }
+        print(response)
         return response
     except Exception as e:
         traceback.print_exc()
         response = {
-            "statusCode": 400,
-            "err": str(e),
-            "body": json.dumps({'err': str(e), 'info': traceback.format_exc().split('\n')})
+            'statusCode': 400,
+            'body': json.dumps({
+                'err': str(e),
+                'stacktrace': traceback.format_exc().split('\n')
+            })
         }
+        print(response)
         return response
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     scrape({'time_span': '1'}, '')
