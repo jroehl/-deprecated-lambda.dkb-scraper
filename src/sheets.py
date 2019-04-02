@@ -12,6 +12,16 @@ DRIVE_V3_URL = 'https://www.googleapis.com/drive/v3/files'
 ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
 
+def parse_time(row, indices):
+    row = row.split(';')
+    date_idx = indices['date'][0]
+    try:
+        return datetime.strptime(row[date_idx], '%x')
+    except ValueError as e:
+        print(e)
+        print(row, date_idx)
+        return datetime.fromtimestamp(0)
+
 class GSheet(object):
     """
     Google Sheet
@@ -471,9 +481,7 @@ class GSheet(object):
             ]
             unique_rows = sorted(
                 unique_rows,
-                key=lambda x: datetime.strptime(
-                    x.split(';')[indices['date'][0]], '%x'
-                ),
+                key=lambda x: parse_time(x, indices),
                 reverse=True
             )
         else:
