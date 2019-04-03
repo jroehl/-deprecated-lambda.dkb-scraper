@@ -33,7 +33,7 @@ custom:
     production:
       rate: cron(0 0/3 * * ? *)
       description: Trigger every 3 hours every day.
-      enabled: true
+      enabled: false
     dev:
       rate: cron(0 0 * * ? *)
       description: Trigger every day at 00:00.
@@ -68,9 +68,9 @@ functions:
             paths:
               time_span: true
               end_date: true
-      - schedule:
-          enabled: ${self:custom.crons.${self:custom.stage}.enabled}
-          rate: ${self:custom.crons.${self:custom.stage}.rate}
-          description: ${self:custom.crons.${self:custom.stage}.description}
-          input:
-            time_span: 2
+      # - schedule:
+      #     enabled: ${self:custom.crons.${self:custom.stage}.enabled}
+      #     rate: ${self:custom.crons.${self:custom.stage}.rate}
+      #     description: ${self:custom.crons.${self:custom.stage}.description}
+      #     input:
+      #       time_span: 2
