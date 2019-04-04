@@ -11,7 +11,7 @@ plugins:
 provider:
   name: aws
   runtime: python3.6
-  timeout: 30
+  timeout: 60
   stage: dev # you can override this via the CLI argument
   apiKeys:
     - ${self:service}-key-${self:custom.stage}
