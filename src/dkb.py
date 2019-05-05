@@ -225,8 +225,13 @@ class DKBSession(object):
             if 'date' in indices:
                 for i in indices['date']:
                     date_format = get_config('formats.date', self.__dkb_cfg)
-                    date = datetime.strptime(transaction[i], date_format)
-                    transaction[i] = date.strftime('%x')
+                    try:
+                        date = datetime.strptime(transaction[i], date_format)
+                        transaction[i] = date.strftime('%x')
+                    except ValueError as error:
+                        print('Skipped date formatting')
+                        print(error)
+                        pass
 
         return transactions
 
